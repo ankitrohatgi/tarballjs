@@ -36,23 +36,15 @@ function load() {
     reader.readAsArrayBuffer(file);
 }
 
-function downloadBlob(blob) {
-    let $downloadElem = document.createElement('a');
-    $downloadElem.href = URL.createObjectURL(blob);
-    $downloadElem.download = "generated.tar";
-    $downloadElem.style.display = "none";
-    document.body.appendChild($downloadElem);
-    $downloadElem.click();
-    document.body.removeChild($downloadElem);
-}
 
 function generate() {
+    let tar = new tarball.TarWriter();
     let $elem = document.getElementById("genFileLoader");
-    let files = $elem.files;
-    
-    
+    let files = $elem.files;     
     for(let fileIdx = 0; fileIdx < files.length; fileIdx++) {
+        tar.addFile($elem.files[fileIdx].name, $elem.files[fileIdx]);
     }
+    tar.download("tarball.tar");
 }
 
 </script>

@@ -106,4 +106,279 @@ tarball.TarReader = class {
 };
 
 tarball.TarWriter = class {
+    constructor() {
+        this.fileData = [];
+    }
+
+    addTextFile(name, text) {
+        let buf = new ArrayBuffer(text.length);
+        let arr = new Uint8Array(buf);
+        for(let i = 0; i < text.length; i++) {
+            arr[i] = text.charCodeAt(i);
+        }
+        this.fileData.push({
+            name: name,
+            array: arr,
+            type: "file",
+            size: arr.length,
+            dataType: "array"
+        });
+    }
+
+    addFileArrayBuffer(name, arrayBuffer) {
+        let arr = new Uint8Array(arrayBuffer);
+        this.fileData.push({
+            name: name,
+            array: arr,
+            type: "file",
+            size: arr.length,
+            dataType: "array"
+        });
+    }
+
+    addFile(name, file) {
+        this.fileData.push({
+            name: name,
+            file: file,
+            size: file.size,
+            type: "file",
+            dataType: "file"
+        });
+    }
+
+    addFolder(name) {
+        this.fileData.push({
+            name: name,
+            type: "directory",
+            size: 0,
+            dataType: "none"
+        });
+    }
+
+    _createBuffer() {
+        let tarDataSize = 0;
+        for(let i = 0; i < this.fileData.length; i++) {                        
+            let size = this.fileData[i].size;
+            tarDataSize += 512 + 512*Math.trunc(size/512);
+            if(size % 512) {
+                tarDataSize += 512;
+            }
+        }
+        let bufSize = 10240*Math.trunc(tarDataSize/10240);
+        if(tarDataSize % 10240) {
+            bufSize += 10240;
+        }
+        this.buffer = new ArrayBuffer(bufSize); 
+    }
+
+    async download(filename) {
+        let blob = await this.write();
+        let $downloadElem = document.createElement('a');
+        $downloadElem.href = URL.createObjectURL(blob);
+        $downloadElem.download = filename;
+        $downloadElem.style.display = "none";
+        document.body.appendChild($downloadElem);
+        $downloadElem.click();
+        document.body.removeChild($downloadElem);
+    }
+
+    _writeBlob(callback) {
+        this._createBuffer();
+        let offset = 0;
+        let filesAdded = 0;
+        let onFileDataAdded = function() {
+            filesAdded++;
+            if(filesAdded === this.fileData.length) {
+                let arr = new Uint8Array(this.buffer);
+                let blob = new Blob([arr], {"type":"application/x-tar"});
+                callback(blob);
+            }
+        };
+        for(let fileIdx = 0; fileIdx < this.fileData.length; fileIdx++) {
+            let fdata = this.fileData[fileIdx];
+            // write header
+            this._writeString(fdata.name, offset, 100);
+            this._writeFileType(fdata.type, offset);
+            this._writeFileSize(fdata.size, offset);
+            this._fillHeader(offset);
+            this._writeChecksum(offset);
+
+            // write file data
+            let destArray = new Uint8Array(this.buffer, offset+512, fdata.size);
+            if(fdata.dataType === "array") {
+                for(let byteIdx = 0; byteIdx < fdata.size; byteIdx++) {
+                    destArray[byteIdx] = fdata.array[byteIdx];
+                }
+                onFileDataAdded();
+            } else if(fdata.dataType === "file") {
+                let reader = new FileReader();
+                
+                reader.onload = (function(outArray) {
+                    let dArray = outArray;
+                    return function(event) {
+                        let sbuf = event.target.result;
+                        let sarr = new Uint8Array(sbuf);
+                        for(let bIdx = 0; bIdx < sarr.length; bIdx++) {
+                            dArray[bIdx] = sarr[bIdx];
+                        }
+                        onFileDataAdded();
+                    };
+                })(destArray);
+                reader.readAsArrayBuffer(fdata.file);
+            }
+
+            offset += (512 + 512*Math.trunc(fdata.size/512));
+            if(fdata.size % 512) {
+                offset += 512;
+            }
+        }
+    }
+
+    write() {
+        return new Promise((resolve, reject) => {
+            this._createBuffer();
+            let offset = 0;
+            let filesAdded = 0;
+            let onFileDataAdded = () => {
+                filesAdded++;
+                if(filesAdded === this.fileData.length) {
+                    let arr = new Uint8Array(this.buffer);
+                    let blob = new Blob([arr], {"type":"application/x-tar"});
+                    resolve(blob);
+                }
+            };
+            for(let fileIdx = 0; fileIdx < this.fileData.length; fileIdx++) {
+                let fdata = this.fileData[fileIdx];
+                // write header
+                this._writeString(fdata.name, offset, 100);
+                this._writeFileType(fdata.type, offset);
+                this._writeFileSize(fdata.size, offset);
+                this._fillHeader(offset);
+                this._writeChecksum(offset);
+
+                // write file data
+                let destArray = new Uint8Array(this.buffer, offset+512, fdata.size);
+                if(fdata.dataType === "array") {
+                    for(let byteIdx = 0; byteIdx < fdata.size; byteIdx++) {
+                        destArray[byteIdx] = fdata.array[byteIdx];
+                    }
+                    onFileDataAdded();
+                } else if(fdata.dataType === "file") {
+                    let reader = new FileReader();
+                    
+                    reader.onload = (function(outArray) {
+                        let dArray = outArray;
+                        return function(event) {
+                            let sbuf = event.target.result;
+                            let sarr = new Uint8Array(sbuf);
+                            for(let bIdx = 0; bIdx < sarr.length; bIdx++) {
+                                dArray[bIdx] = sarr[bIdx];
+                            }
+                            onFileDataAdded();
+                        };
+                    })(destArray);
+                    reader.readAsArrayBuffer(fdata.file);
+                }
+
+                offset += (512 + 512*Math.trunc(fdata.size/512));
+                if(fdata.size % 512) {
+                    offset += 512;
+                }
+            }
+        });
+    }
+
+    _writeString(str, offset, size) {
+        let strView = new Uint8Array(this.buffer, offset, size);
+        for(let i = 0; i < size; i++) {
+            if(i < str.length) {
+                strView[i] = str.charCodeAt(i);
+            } else {
+                strView[i] = 0;
+            }
+        }
+    }
+
+    _writeFileType(typeStr, header_offset) {
+        // offset: 156
+        let typeChar = "0";
+        if(typeStr === "file") {
+            typeChar = "0";
+        } else if(typeStr === "directory") {
+            typeChar = "5";
+        }
+        let typeView = new Uint8Array(this.buffer, header_offset + 156, 1);
+        typeView[0] = typeChar.charCodeAt(0); 
+    }
+
+    _writeFileSize(size, header_offset) {
+        // offset: 124
+        let sz = size.toString(8);
+        sz = this._leftPad(sz, 11);
+        this._writeString(sz, header_offset+124, 12);
+    }
+
+    _leftPad(number, targetLength) {
+        let output = number + '';
+        while (output.length < targetLength) {
+            output = '0' + output;
+        }
+        return output;
+    }
+
+    _writeFileMode(mode, header_offset) {
+        // offset: 100
+        this._writeString(this._leftPad(mode,7), header_offset+100, 8);         
+    }
+
+    _writeFileUid(uid, header_offset) {
+        // offset: 108
+        this._writeString(this._leftPad(uid,7), header_offset+108, 8);
+    }
+    
+    _writeFileGid(gid, header_offset) {
+        // offset: 116
+        this._writeString(this._leftPad(gid,7), header_offset+116, 8);
+    }
+
+    _writeFileMtime(mtime, header_offset) {
+        // offset: 136
+        this._writeString(this._leftPad(mtime,11), header_offset+136, 12);
+    }
+
+    _writeFileUser(user, header_offset) {
+        // offset: 265
+        this._writeString(user, header_offset+265, 32);
+    }
+    
+    _writeFileGroup(group, header_offset) {
+        // offset: 297
+        this._writeString(group, header_offset+297, 32);
+    }
+
+    _writeChecksum(header_offset) {
+        // offset: 148
+        this._writeString("        ", header_offset+148, 8); // first fill with spaces
+
+        // add up header bytes
+        let header = new Uint8Array(this.buffer, header_offset, 512);
+        let chksum = 0;
+        for(let i = 0; i < 512; i++) {
+            chksum += header[i];
+        }
+        this._writeString(chksum.toString(8), header_offset+148, 8);
+    }
+    
+    _fillHeader(header_offset) {
+        this._writeFileMode("664", header_offset);
+        this._writeFileUid("1750", header_offset);
+        this._writeFileGid("1750", header_offset);
+        this._writeFileMtime("13153345327", header_offset);
+
+        this._writeString("ustar", header_offset+257,6); // magic string
+        this._writeString("00", header_offset+263,2); // magic version
+
+        this._writeFileUser("arohatgi", header_offset);
+        this._writeFileGroup("arohatgi", header_offset);
+    }
 };
