@@ -182,58 +182,6 @@ tarball.TarWriter = class {
         document.body.removeChild($downloadElem);
     }
 
-    _writeBlob(callback) {
-        this._createBuffer();
-        let offset = 0;
-        let filesAdded = 0;
-        let onFileDataAdded = function() {
-            filesAdded++;
-            if(filesAdded === this.fileData.length) {
-                let arr = new Uint8Array(this.buffer);
-                let blob = new Blob([arr], {"type":"application/x-tar"});
-                callback(blob);
-            }
-        };
-        for(let fileIdx = 0; fileIdx < this.fileData.length; fileIdx++) {
-            let fdata = this.fileData[fileIdx];
-            // write header
-            this._writeString(fdata.name, offset, 100);
-            this._writeFileType(fdata.type, offset);
-            this._writeFileSize(fdata.size, offset);
-            this._fillHeader(offset);
-            this._writeChecksum(offset);
-
-            // write file data
-            let destArray = new Uint8Array(this.buffer, offset+512, fdata.size);
-            if(fdata.dataType === "array") {
-                for(let byteIdx = 0; byteIdx < fdata.size; byteIdx++) {
-                    destArray[byteIdx] = fdata.array[byteIdx];
-                }
-                onFileDataAdded();
-            } else if(fdata.dataType === "file") {
-                let reader = new FileReader();
-                
-                reader.onload = (function(outArray) {
-                    let dArray = outArray;
-                    return function(event) {
-                        let sbuf = event.target.result;
-                        let sarr = new Uint8Array(sbuf);
-                        for(let bIdx = 0; bIdx < sarr.length; bIdx++) {
-                            dArray[bIdx] = sarr[bIdx];
-                        }
-                        onFileDataAdded();
-                    };
-                })(destArray);
-                reader.readAsArrayBuffer(fdata.file);
-            }
-
-            offset += (512 + 512*Math.trunc(fdata.size/512));
-            if(fdata.size % 512) {
-                offset += 512;
-            }
-        }
-    }
-
     write() {
         return new Promise((resolve, reject) => {
             this._createBuffer();
