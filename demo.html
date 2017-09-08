@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src="tarball.js"></script>
+<script>
+function load() {
+    let $elem = document.getElementById("fileLoader");
+    let files = $elem.files;
+    let file = files[0];
+    console.log("File size: ", file.size);
+    console.log("File type: ", file.type);
+
+    // read tar file
+    let reader = new FileReader();
+    reader.onload = function(event) {
+        let buf = event.target.result;
+        let tar = new tarball.TarReader(buf);
+        let fileInfo = tar.getFileInfo();
+
+        for(let i = 0; i < fileInfo.length; i++) {
+            let file_name = fileInfo[i].name;
+            console.log("file name: ", file_name);
+            console.log("file size: ", fileInfo[i].size);
+            console.log("file type: ", fileInfo[i].type);
+            if(file_name.indexOf(".json") >= 0 || file_name.indexOf(".txt") >= 0) {
+                console.log(tar.getTextFile(file_name));
+            } else if(file_name.indexOf(".png") >= 0) {
+                let blob = tar.getFileBlob(file_name, "image/png");
+                let imageUrl = window.URL.createObjectURL(blob);
+                let $img = document.getElementById('outimg');
+                $img.src = imageUrl;
+            }
+            
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+function downloadBlob(blob) {
+    let $downloadElem = document.createElement('a');
+    $downloadElem.href = URL.createObjectURL(blob);
+    $downloadElem.download = "generated.tar";
+    $downloadElem.style.display = "none";
+    document.body.appendChild($downloadElem);
+    $downloadElem.click();
+    document.body.removeChild($downloadElem);
+}
+
+function generate() {
+    let $elem = document.getElementById("genFileLoader");
+    let files = $elem.files;
+    
+    
+    for(let fileIdx = 0; fileIdx < files.length; fileIdx++) {
+    }
+}
+
+</script>
+</head>
+<body>
+<h2>Read .tar</h2>
+<p>Load File: <input type="file" id="fileLoader"/><input type="button" value="load" onclick="load();"/></p>
+<p><img id="outimg"/></p>
+<hr/>
+<h2>Generate .tar</h2>
+<p>Load File(s): <input type="file" id="genFileLoader" multiple/><input type="button" value="load" onclick="generate();"/></p>
+</body>
+</html>
