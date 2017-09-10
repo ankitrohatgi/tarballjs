@@ -5,13 +5,31 @@ Javascript library to create or read tar files in the browser
 It is often necessary to pack data into single files in the browser (e.g. creating a "project" file consisting of images+data in WebPlotDigitizer). One way is to create simple tarballs with all the data. There are a few existing libraries that do this, but this seems easy enough to do so I decided to do make my own library for learning purposes.
 
 ## Status
-This library is just an intial hack at the moment. Here are a few known limitations:
+There are a few known limitations with this library:
 
 - Browser only, no support for NodeJS.
 - File name (including path) has to be less than 100 characters.
-- Maximum total file size seems to be limited to ~1GB (exact limit is unknown).
+- Maximum total file size seems to be limited to somewhere between 500MB to 1GB (exact limit is unknown).
 
-If you are looking for more serious attempts, then please refer to the following:
+Some benefits of using this library:
+
+- Code is a lot cleaner than most other implementations that I can find.
+- I am in the process of adding unit tests.
+
+## Running Unit Tests
+For Chrome, the test page has to be hosted on a HTTP server. An easy way is to use Python:
+
+In the root directory of this project, do:
+
+    python -m SimpleHTTPServer 8000
+
+Then browse to http://localhost:8000/tests/
+
+For a quick test, you can visit: http://arohatgi.info/tarballjs/tests/
+
+In Firefox, you can simply load tests/index.html without starting a web server.
+
+## Other Implementations
 
 - https://github.com/beatgammit/tar-js
 - https://github.com/chriswininger/jstar
@@ -21,7 +39,7 @@ If you are looking for more serious attempts, then please refer to the following
 
 If you are aware of other implementations, then please let me know :)
 
-## Reference
+## References
 
 - https://en.wikipedia.org/wiki/Tar_(computing)
 - https://www.gnu.org/software/tar/manual/html_node/Standard.html
