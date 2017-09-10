@@ -255,6 +255,8 @@ tarball.TarWriter = class {
                         };
                     })(destArray);
                     reader.readAsArrayBuffer(fdata.file);
+                } else if(fdata.type === "directory") {
+                    onFileDataAdded();
                 }
 
                 offset += (512 + 512*Math.trunc(fdata.size/512));

@@ -8,6 +8,28 @@ let testUtils = {
                 });
             });
         });
+    },
+    generateTar: function() {
+        // generate a tarball and read it back
+        return new Promise((resolve, reject) => {
+            let tarWriter = new tarball.TarWriter();
+            tarWriter.addFolder("myfolder/");
+            tarWriter.addTextFile("myfolder/first.txt", "this is some text");
+            tarWriter.addTextFile("myfolder/second.txt", "some more text");
+            fetch("files/simple/tux.png").then(resp => resp.blob()).then((blob) => {
+                let file = blob;
+                file.name = "tux.png";
+                file.lastModifiedDate = new Date();
+                tarWriter.addFile("myfolder/tux.png", file);
+                tarWriter.write().then((tarBlob) => {
+                    let tarFile = tarBlob;
+                    let tarReader = new tarball.TarReader();
+                    tarReader.readFile(tarFile).then((fileInfo) => {
+                        resolve(tarReader);
+                    });
+                });
+            });
+        });
     }
 };
 
@@ -62,4 +84,12 @@ QUnit.test( "Check image file contents", function( assert ) {
 
 // write tests
 QUnit.module("Write tests");
+QUnit.test( "Count files", function( assert ) {
+    let done = assert.async();
+    testUtils.generateTar().then((tar) => {
+        let fileInfo = tar.getFileInfo();
+        assert.equal(fileInfo.length, 4, "file count is ok");
+        done();
+    });
+});
 
