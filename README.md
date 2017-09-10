@@ -16,6 +16,9 @@ Some benefits of using this library:
 - Code is a lot cleaner than most other implementations that I can find.
 - Unit tests for read and write.
 
+## Browser Support
+This works fine on any recent version of Chrome, Firefox or Safari. To test your browser, run the unit tests here: http://arohatgi.info/tarballjs/tests/ 
+
 ## Running Unit Tests
 For Chrome, the test page has to be hosted on a HTTP server. An easy way is to use Python:
 
