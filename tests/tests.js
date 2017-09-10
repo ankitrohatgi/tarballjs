@@ -9,7 +9,7 @@ let testUtils = {
             });
         });
     },
-    generateTar: function() {
+    generateTar: function(download) {
         // generate a tarball and read it back
         return new Promise((resolve, reject) => {
             let tarWriter = new tarball.TarWriter();
@@ -21,13 +21,19 @@ let testUtils = {
                 file.name = "tux.png";
                 file.lastModifiedDate = new Date();
                 tarWriter.addFile("myfolder/tux.png", file);
-                tarWriter.write().then((tarBlob) => {
-                    let tarFile = tarBlob;
-                    let tarReader = new tarball.TarReader();
-                    tarReader.readFile(tarFile).then((fileInfo) => {
-                        resolve(tarReader);
+                if(download) {
+                    tarWriter.download("generated.tar").then(() => {
+                        resolve(null);
                     });
-                });
+                } else {
+                    tarWriter.write().then((tarBlob) => {
+                        let tarFile = tarBlob;
+                        let tarReader = new tarball.TarReader();
+                        tarReader.readFile(tarFile).then((fileInfo) => {
+                            resolve(tarReader);
+                        });
+                    });
+                }
             });
         });
     }
@@ -127,4 +133,13 @@ QUnit.test( "Check image file contents", function( assert ) {
         image.src = imageURL;
     });
 });
+
+QUnit.test( "Download test", function( assert ) {
+    let done = assert.async();
+    testUtils.generateTar(true).then((tar) => {
+        assert.ok(1, "download test completed, please check tar file manually");
+        done();
+    });
+});
+
 

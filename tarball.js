@@ -230,7 +230,7 @@ tarball.TarWriter = class {
                 this._writeFileName(fdata.name, offset);
                 this._writeFileType(fdata.type, offset);
                 this._writeFileSize(fdata.size, offset);
-                this._fillHeader(offset, fdata.opts);
+                this._fillHeader(offset, fdata.opts, fdata.type);
                 this._writeChecksum(offset);
 
                 // write file data
@@ -362,10 +362,10 @@ tarball.TarWriter = class {
         return defaultVal;
     }
     
-    _fillHeader(header_offset, opts) {
+    _fillHeader(header_offset, opts, fileType) {
         let uid = this._getOpt(opts, "uid", 1000);
         let gid = this._getOpt(opts, "gid", 1000);
-        let mode = this._getOpt(opts, "mode", "664");
+        let mode = this._getOpt(opts, "mode", fileType === "file" ? "664" : "775");
         let mtime = this._getOpt(opts, "mtime", Date.now());
         let user = this._getOpt(opts, "user", "tarballjs");
         let group = this._getOpt(opts, "group", "tarballjs");
