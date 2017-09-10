@@ -14,7 +14,7 @@ tarball.TarReader = class {
         let file_name = "";
         let file_type = null;
         while(offset < this.buffer.byteLength - 512) {
-            file_name = this._readString(offset, 100); // file name
+            file_name = this._readFileName(offset); // file name
             if(file_name.length == 0) {
                 break;
             }
@@ -48,6 +48,11 @@ tarball.TarReader = class {
             i++;
         }
         return rtnStr;
+    }
+
+    _readFileName(header_offset) {
+        let name = _readString(header_offset, 100);
+        return name;
     }
 
     _readFileType(header_offset) {
@@ -110,7 +115,7 @@ tarball.TarWriter = class {
         this.fileData = [];
     }
 
-    addTextFile(name, text) {
+    addTextFile(name, text, opts) {
         let buf = new ArrayBuffer(text.length);
         let arr = new Uint8Array(buf);
         for(let i = 0; i < text.length; i++) {
@@ -121,37 +126,41 @@ tarball.TarWriter = class {
             array: arr,
             type: "file",
             size: arr.length,
-            dataType: "array"
+            dataType: "array",
+            opts: opts
         });
     }
 
-    addFileArrayBuffer(name, arrayBuffer) {
+    addFileArrayBuffer(name, arrayBuffer, opts) {
         let arr = new Uint8Array(arrayBuffer);
         this.fileData.push({
             name: name,
             array: arr,
             type: "file",
             size: arr.length,
-            dataType: "array"
+            dataType: "array",
+            opts: opts
         });
     }
 
-    addFile(name, file) {
+    addFile(name, file, opts) {
         this.fileData.push({
             name: name,
             file: file,
             size: file.size,
             type: "file",
-            dataType: "file"
+            dataType: "file",
+            opts: opts
         });
     }
 
-    addFolder(name) {
+    addFolder(name, opts) {
         this.fileData.push({
             name: name,
             type: "directory",
             size: 0,
-            dataType: "none"
+            dataType: "none",
+            opts: opts
         });
     }
 
@@ -183,7 +192,7 @@ tarball.TarWriter = class {
     }
 
     write() {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve,reject) => {
             this._createBuffer();
             let offset = 0;
             let filesAdded = 0;
@@ -198,10 +207,10 @@ tarball.TarWriter = class {
             for(let fileIdx = 0; fileIdx < this.fileData.length; fileIdx++) {
                 let fdata = this.fileData[fileIdx];
                 // write header
-                this._writeString(fdata.name, offset, 100);
+                this._writeFileName(fdata.name, offset);
                 this._writeFileType(fdata.type, offset);
                 this._writeFileSize(fdata.size, offset);
-                this._fillHeader(offset);
+                this._fillHeader(offset, fdata.opts);
                 this._writeChecksum(offset);
 
                 // write file data
@@ -245,6 +254,11 @@ tarball.TarWriter = class {
                 strView[i] = 0;
             }
         }
+    }
+
+    _writeFileName(name, header_offset) {
+        // offset: 0
+        this._writeString(name, header_offset, 100);
     }
 
     _writeFileType(typeStr, header_offset) {
@@ -316,17 +330,34 @@ tarball.TarWriter = class {
         }
         this._writeString(chksum.toString(8), header_offset+148, 8);
     }
+
+    _getOpt(opts, opname, defaultVal) {
+        if(opts != null) {
+            if(opts[opname] != null) {
+                return opts[opname];
+            }
+        }
+        return defaultVal;
+    }
     
-    _fillHeader(header_offset) {
-        this._writeFileMode("664", header_offset);
-        this._writeFileUid("1750", header_offset);
-        this._writeFileGid("1750", header_offset);
-        this._writeFileMtime("13153345327", header_offset);
+    _fillHeader(header_offset, opts) {
+        let uid = this._getOpt(opts, "uid", 1000);
+        let gid = this._getOpt(opts, "gid", 1000);
+        let mode = this._getOpt(opts, "mode", "664");
+        let mtime = this._getOpt(opts, "mtime", Date.now());
+        let user = this._getOpt(opts, "user", "tarballjs");
+        let group = this._getOpt(opts, "group", "tarballjs");
+
+        this._writeFileMode(mode, header_offset);
+        this._writeFileUid(uid.toString(8), header_offset);
+        this._writeFileGid(gid.toString(8), header_offset);
+        this._writeFileMtime(Math.trunc(mtime/1000).toString(8), header_offset);
 
         this._writeString("ustar", header_offset+257,6); // magic string
         this._writeString("00", header_offset+263,2); // magic version
 
-        this._writeFileUser("arohatgi", header_offset);
-        this._writeFileGroup("arohatgi", header_offset);
+        this._writeFileUser(user, header_offset);
+        this._writeFileGroup(group, header_offset);
     }
 };
+
