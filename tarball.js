@@ -1,10 +1,30 @@
 let tarball = {};
 
 tarball.TarReader = class {
-    constructor(arrayBuffer) {
-        this.buffer = arrayBuffer;
+    constructor() {
         this.fileInfo = [];
-        this._readFileInfo();
+    }
+
+    readFile(file) {
+        return new Promise((resolve, reject) => {
+            let reader = new FileReader();
+            reader.onload = (event) => {
+                this.buffer = event.target.result;
+                this.fileInfo = [];
+                this._readFileInfo();
+                resolve(this.fileInfo);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    readArrayBuffer(arrayBuffer) {
+        return new Promise((resolve, reject) => {
+            this.buffer = arrayBuffer;
+            this.fileInfo = [];
+            this._readFileInfo();
+            resolve(this.fileInfo);
+        });
     }
 
     _readFileInfo() {
@@ -51,7 +71,7 @@ tarball.TarReader = class {
     }
 
     _readFileName(header_offset) {
-        let name = _readString(header_offset, 100);
+        let name = this._readString(header_offset, 100);
         return name;
     }
 

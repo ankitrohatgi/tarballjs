@@ -4,19 +4,12 @@
 <script src="tarball.js"></script>
 <script>
 function load() {
-    let $elem = document.getElementById("fileLoader");
-    let files = $elem.files;
-    let file = files[0];
-    console.log("File size: ", file.size);
-    console.log("File type: ", file.type);
-
-    // read tar file
-    let reader = new FileReader();
-    reader.onload = function(event) {
-        let buf = event.target.result;
-        let tar = new tarball.TarReader(buf);
-        let fileInfo = tar.getFileInfo();
-
+    let $elem = document.getElementById("tar-file-input");
+    let tarFile = $elem.files[0];
+    let tar = new tarball.TarReader();
+    let $fileList = document.getElementById('file-list');
+    $fileList.innerHTML = "";
+    tar.readFile(tarFile).then(function(fileInfo) {
         for(let i = 0; i < fileInfo.length; i++) {
             let file_name = fileInfo[i].name;
             console.log("file name: ", file_name);
@@ -24,22 +17,23 @@ function load() {
             console.log("file type: ", fileInfo[i].type);
             if(file_name.indexOf(".json") >= 0 || file_name.indexOf(".txt") >= 0) {
                 console.log(tar.getTextFile(file_name));
-            } else if(file_name.indexOf(".png") >= 0) {
-                let blob = tar.getFileBlob(file_name, "image/png");
-                let imageUrl = window.URL.createObjectURL(blob);
-                let $img = document.getElementById('outimg');
-                $img.src = imageUrl;
             }
             
+            if(fileInfo[i].type == "file") {
+                let blob = tar.getFileBlob(file_name);
+                let fileUrl = window.URL.createObjectURL(blob);
+                $fileList.innerHTML += "<li><a href='" + fileUrl + "' download='" + file_name + "'>" + file_name + "</a></li>";
+            }                        
         }
-    };
-    reader.readAsArrayBuffer(file);
+    }, function(err) {
+        console.log("error:", err);
+    });
 }
 
 
 function generate() {
     let tar = new tarball.TarWriter();
-    let $elem = document.getElementById("genFileLoader");
+    let $elem = document.getElementById("source-files-input");
     let files = $elem.files;     
     for(let fileIdx = 0; fileIdx < files.length; fileIdx++) {
         tar.addFile($elem.files[fileIdx].name, $elem.files[fileIdx]);
@@ -50,11 +44,19 @@ function generate() {
 </script>
 </head>
 <body>
+<h1>tarballjs</h1>
+<hr/>
 <h2>Read .tar</h2>
-<p>Load File: <input type="file" id="fileLoader"/><input type="button" value="load" onclick="load();"/></p>
-<p><img id="outimg"/></p>
+<p>File to extract: <input type="file" id="tar-file-input" onchange="load();"/><input type="button" value="Extract" onclick="load();"/></p>
+<br/>
+<p>Files:</p>
+<ul id="file-list">
+</ul>
+</p>
 <hr/>
 <h2>Generate .tar</h2>
-<p>Load File(s): <input type="file" id="genFileLoader" multiple/><input type="button" value="load" onclick="generate();"/></p>
+<p>Load File(s): <input type="file" id="source-files-input" multiple/><input type="button" value="Generate" onclick="generate();"/></p>
+<hr/>
+<a href="https://github.com/ankitrohatgi/tarballjs">https://github.com/ankitrohatgi/tarballjs</a>
 </body>
 </html>
