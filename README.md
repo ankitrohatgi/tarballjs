@@ -14,7 +14,7 @@ There are a few known limitations with this library:
 Some benefits of using this library:
 
 - Code is a lot cleaner than most other implementations that I can find.
-- I am in the process of adding unit tests.
+- Unit tests for read and write.
 
 ## Running Unit Tests
 For Chrome, the test page has to be hosted on a HTTP server. An easy way is to use Python:

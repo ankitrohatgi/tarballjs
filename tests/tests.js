@@ -93,3 +93,38 @@ QUnit.test( "Count files", function( assert ) {
     });
 });
 
+QUnit.test( "Check file headers", function( assert ) {
+    let done = assert.async();
+    testUtils.generateTar().then((tar) => {
+        let fileInfo = tar.getFileInfo();
+        assert.equal(fileInfo[3].name, "myfolder/tux.png", "file name is ok");
+        assert.equal(fileInfo[3].type, "file", "file type is ok");
+        assert.equal(fileInfo[3].size, 11913, "file size is ok");
+        done();
+    });
+});
+
+QUnit.test( "Check text file contents", function( assert ) {
+    let done = assert.async();
+    testUtils.generateTar().then((tar) => {
+        let text = tar.getTextFile("myfolder/second.txt");
+        assert.equal(text, "some more text", "text file contents are ok");
+        done();
+    });
+});
+
+QUnit.test( "Check image file contents", function( assert ) {
+    let done = assert.async();
+    testUtils.generateTar().then((tar) => {
+        let imageBlob = tar.getFileBlob("myfolder/tux.png", "image/png");
+        let imageURL = URL.createObjectURL(imageBlob);
+        let image = new Image();
+        image.onload = (event) => {
+            assert.equal(image.width, 265, "Image width is ok");
+            assert.equal(image.height, 314, "Image height is ok");
+            done();
+        };
+        image.src = imageURL;
+    });
+});
+
