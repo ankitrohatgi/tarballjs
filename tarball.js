@@ -103,6 +103,11 @@ tarball.TarReader = class {
         return blob;
     }
 
+    _readFileBinary(file_offset, size, mimetype) {
+        let view = new Uint8Array(this.buffer, file_offset, size);
+        return view;
+    }
+
     _readTextFile(file_offset, size) {
         let view = new Uint8Array(this.buffer, file_offset, size);
         let data = "";
@@ -125,6 +130,14 @@ tarball.TarReader = class {
         if(i >= 0) {
             let info = this.fileInfo[i];
             return this._readFileBlob(info.header_offset+512, info.size, mimetype); 
+        }
+    }
+
+    getFileBinary(file_name) {
+        let i = this.fileInfo.findIndex(info => info.name == file_name);
+        if(i >= 0) {
+            let info = this.fileInfo[i];
+            return this._readFileBinary(info.header_offset+512, info.size); 
         }
     }
 };
