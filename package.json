@@ -1,6 +1,6 @@
 {
     "name": "tarballjs",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "main": "tarball.js",
     "license": "SEE LICENSE FILE"
 }
