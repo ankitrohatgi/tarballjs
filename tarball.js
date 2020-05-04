@@ -20,12 +20,10 @@ tarball.TarReader = class {
     }
 
     readArrayBuffer(arrayBuffer) {
-        return new Promise((resolve, reject) => {
-            this.buffer = arrayBuffer;
-            this.fileInfo = [];
-            this._readFileInfo();
-            resolve(this.fileInfo);
-        });
+        this.buffer = arrayBuffer;
+        this.fileInfo = [];
+        this._readFileInfo();
+        return this.fileInfo;
     }
 
     _readFileInfo() {
