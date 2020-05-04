@@ -1,4 +1,5 @@
 let tarball = {};
+module.exports = tarball;
 
 tarball.TarReader = class {
     constructor() {
