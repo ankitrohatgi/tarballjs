@@ -224,13 +224,16 @@ tarball.TarWriter = class {
         document.body.removeChild($downloadElem);
     }
 
-    write() {
+    write(onUpdate) {
         return new Promise((resolve,reject) => {
             this._createBuffer();
             let offset = 0;
             let filesAdded = 0;
             let onFileDataAdded = () => {
                 filesAdded++;
+                if (onUpdate) {
+                    onUpdate(filesAdded / this.fileData.length * 100);
+                }
                 if(filesAdded === this.fileData.length) {
                     let arr = new Uint8Array(this.buffer);
                     resolve(arr);
