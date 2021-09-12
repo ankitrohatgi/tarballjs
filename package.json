@@ -1,0 +1,25 @@
+{
+  "name": "tarballjs",
+  "version": "1.0.0",
+  "description": "Read and write tarballs in the browser",
+  "main": "tarball.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ankitrohatgi/tarballjs.git"
+  },
+  "keywords": [
+    "tar"
+  ],
+  "author": "Ankit Rohatgi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ankitrohatgi/tarballjs/issues"
+  },
+  "homepage": "https://github.com/ankitrohatgi/tarballjs#readme"
+}
