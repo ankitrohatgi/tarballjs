@@ -68,7 +68,8 @@ tarball.TarReader = class {
 
     _readString(str_offset, size) {
         let strView = new Uint8Array(this.buffer, str_offset, size);
-        return String.fromCodePoint(...strView);
+        let i = strView.indexOf(0);
+        return String.fromCodePoint(...strView.slice(0, i));
     }
 
     _readFileName(header_offset) {
