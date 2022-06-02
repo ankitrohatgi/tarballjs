@@ -60,13 +60,7 @@ tarball.TarReader = class {
 
     _readString(str_offset, size) {
         let strView = new Uint8Array(this.buffer, str_offset, size);
-        let i = 0;
-        let rtnStr = "";
-        while(strView[i] != 0) {
-            rtnStr += String.fromCharCode(strView[i]);
-            i++;
-        }
-        return rtnStr;
+        return String.fromCodePoint(...strView);
     }
 
     _readFileName(header_offset) {
@@ -103,40 +97,33 @@ tarball.TarReader = class {
         return blob;
     }
 
-    _readFileBinary(file_offset, size, mimetype) {
+    _readFileBinary(file_offset, size) {
         let view = new Uint8Array(this.buffer, file_offset, size);
         return view;
     }
 
     _readTextFile(file_offset, size) {
         let view = new Uint8Array(this.buffer, file_offset, size);
-        let data = "";
-        for(let i = 0; i < size; i++) {
-            data += String.fromCharCode(view[i]);
-        }
-        return data;
+        return String.fromCodePoint(...view);
     }
 
     getTextFile(file_name) {
-        let i = this.fileInfo.findIndex(info => info.name == file_name);
-        if(i >= 0) {
-            let info = this.fileInfo[i];
+        let info = this.fileInfo.find(info => info.name == file_name);
+        if (info) {
             return this._readTextFile(info.header_offset+512, info.size); 
         }
     }
 
     getFileBlob(file_name, mimetype) {
-        let i = this.fileInfo.findIndex(info => info.name == file_name);
-        if(i >= 0) {
-            let info = this.fileInfo[i];
+        let info = this.fileInfo.find(info => info.name == file_name);
+        if (info) {
             return this._readFileBlob(info.header_offset+512, info.size, mimetype); 
         }
     }
 
     getFileBinary(file_name) {
-        let i = this.fileInfo.findIndex(info => info.name == file_name);
-        if(i >= 0) {
-            let info = this.fileInfo[i];
+        let info = this.fileInfo.find(info => info.name == file_name);
+        if (info) {
             return this._readFileBinary(info.header_offset+512, info.size); 
         }
     }
