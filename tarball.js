@@ -1,5 +1,13 @@
 let tarball = {};
-module.exports = tarball;
+
+if (typeof module === "object" && typeof module.exports === "object") {
+    // CommonJS
+    module.exports = tarball;
+} else if (typeof this === "object") {
+    // Browser
+    // use this instead of window, since window might not exist and throw and error
+    this.tarball = tarball;
+}
 
 tarball.TarReader = class {
     constructor() {
