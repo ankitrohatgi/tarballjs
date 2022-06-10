@@ -26,7 +26,7 @@ let testUtils = {
                         resolve(null);
                     });
                 } else {
-                    tarWriter.write().then((tarBlob) => {
+                    tarWriter.writeBlob().then((tarBlob) => {
                         let tarFile = tarBlob;
                         let tarReader = new tarball.TarReader();
                         tarReader.readFile(tarFile).then((fileInfo) => {

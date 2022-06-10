@@ -209,8 +209,7 @@ tarball.TarWriter = class {
     }
 
     async download(filename) {
-        let arr = await this.write();
-        let blob = new Blob([arr], {"type":"application/x-tar"});
+        let blob = await this.writeBlob();
         let $downloadElem = document.createElement('a');
         $downloadElem.href = URL.createObjectURL(blob);
         $downloadElem.download = filename;
@@ -218,6 +217,10 @@ tarball.TarWriter = class {
         document.body.appendChild($downloadElem);
         $downloadElem.click();
         document.body.removeChild($downloadElem);
+    }
+
+    async writeBlob(onUpdate) {
+        return new Blob([await this.write(onUpdate)], {"type":"application/x-tar"});
     }
 
     write(onUpdate) {
