@@ -69,7 +69,8 @@ tarball.TarReader = class {
     _readString(str_offset, size) {
         let strView = new Uint8Array(this.buffer, str_offset, size);
         let i = strView.indexOf(0);
-        return String.fromCodePoint(...strView.slice(0, i));
+        let td = new TextDecoder();
+        return td.decode(strView.slice(0, i));
     }
 
     _readFileName(header_offset) {
@@ -113,7 +114,8 @@ tarball.TarReader = class {
 
     _readTextFile(file_offset, size) {
         let view = new Uint8Array(this.buffer, file_offset, size);
-        return String.fromCodePoint(...view);
+        let td = new TextDecoder();
+        return td.decode(view);
     }
 
     getTextFile(file_name) {
@@ -144,11 +146,8 @@ tarball.TarWriter = class {
     }
 
     addTextFile(name, text, opts) {
-        let buf = new ArrayBuffer(text.length);
-        let arr = new Uint8Array(buf);
-        for(let i = 0; i < text.length; i++) {
-            arr[i] = text.charCodeAt(i);
-        }
+        let te = new TextEncoder();
+        let arr = te.encode(text);
         this.fileData.push({
             name: name,
             array: arr,
@@ -283,11 +282,18 @@ tarball.TarWriter = class {
 
     _writeString(str, offset, size) {
         let strView = new Uint8Array(this.buffer, offset, size);
-        for(let i = 0; i < size; i++) {
-            if(i < str.length) {
-                strView[i] = str.charCodeAt(i);
-            } else {
+        let te = new TextEncoder();
+        if (te.encodeInto) {
+            // let the browser write directly into the buffer
+            let written = te.encodeInto(str, strView).written;
+            for (let i = written; i < size; i++) {
                 strView[i] = 0;
+            }
+        } else {
+            // browser can't write directly into the buffer, do it manually
+            let arr = te.encode(str);
+            for (let i = 0; i < size; i++) {
+                strView[i] = i < arr.length ? arr[i] : 0;
             }
         }
     }

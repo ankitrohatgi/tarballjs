@@ -14,8 +14,8 @@ let testUtils = {
         return new Promise((resolve, reject) => {
             let tarWriter = new tarball.TarWriter();
             tarWriter.addFolder("myfolder/");
-            tarWriter.addTextFile("myfolder/first.txt", "this is some text");
-            tarWriter.addTextFile("myfolder/second.txt", "some more text");
+            tarWriter.addTextFile("myfolder/first.txt", "this is some text 🙂");
+            tarWriter.addTextFile("myfolder/second.txt", "some more text with 🙃 emojis");
             fetch("files/simple/tux.png").then(resp => resp.blob()).then((blob) => {
                 let file = blob;
                 file.name = "tux.png";
@@ -47,8 +47,8 @@ QUnit.test( "Count files", function( assert ) {
         let fileInfo = tar.getFileInfo();
         assert.equal(fileInfo.length, 3, "Has 3 files");
         assert.equal(fileInfo[0].name, "simple/", "Has simple directory");
-        assert.equal(fileInfo[1].name, "simple/tux.png", "Has image file");
-        assert.equal(fileInfo[2].name, "simple/hello.txt", "Has text file");
+        assert.equal(fileInfo[1].name, "simple/hello.txt", "Has text file");
+        assert.equal(fileInfo[2].name, "simple/tux.png", "Has image file");
         done();
     });
 });
@@ -57,9 +57,9 @@ QUnit.test( "Check file headers", function( assert ) {
     let done = assert.async();
     testUtils.fetchTar("files/simple.tar").then((tar) => {
         let fileInfo = tar.getFileInfo();
-        assert.equal(fileInfo[1].name, "simple/tux.png", "File name is ok");
-        assert.equal(fileInfo[1].type, "file", "File type is ok");
-        assert.equal(fileInfo[1].size, 11913, "File size is ok");
+        assert.equal(fileInfo[2].name, "simple/tux.png", "File name is ok");
+        assert.equal(fileInfo[2].type, "file", "File type is ok");
+        assert.equal(fileInfo[2].size, 11913, "File size is ok");
         done();
     });
 });
@@ -68,7 +68,7 @@ QUnit.test( "Check text file contents", function( assert ) {
     let done = assert.async();
     testUtils.fetchTar("files/simple.tar").then((tar) => {
         let text = tar.getTextFile("simple/hello.txt");
-        assert.equal(text, "hello world!\n", "Text file contents are ok");
+        assert.equal(text, "hello world! 🙂\n", "Text file contents are ok");
         done();
     });
 });
@@ -114,7 +114,7 @@ QUnit.test( "Check text file contents", function( assert ) {
     let done = assert.async();
     testUtils.generateTar().then((tar) => {
         let text = tar.getTextFile("myfolder/second.txt");
-        assert.equal(text, "some more text", "text file contents are ok");
+        assert.equal(text, "some more text with 🙃 emojis", "text file contents are ok");
         done();
     });
 });
