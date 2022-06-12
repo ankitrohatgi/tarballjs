@@ -1,5 +1,14 @@
 let tarball = {};
 
+if (typeof module === "object" && typeof module.exports === "object") {
+    // CommonJS
+    module.exports = tarball;
+} else if (typeof this === "object") {
+    // Browser
+    // use this instead of window, since window might not exist and throw and error
+    this.tarball = tarball;
+}
+
 tarball.TarReader = class {
     constructor() {
         this.fileInfo = [];
@@ -19,12 +28,10 @@ tarball.TarReader = class {
     }
 
     readArrayBuffer(arrayBuffer) {
-        return new Promise((resolve, reject) => {
-            this.buffer = arrayBuffer;
-            this.fileInfo = [];
-            this._readFileInfo();
-            resolve(this.fileInfo);
-        });
+        this.buffer = arrayBuffer;
+        this.fileInfo = [];
+        this._readFileInfo();
+        return this.fileInfo;
     }
 
     _readFileInfo() {
@@ -61,13 +68,9 @@ tarball.TarReader = class {
 
     _readString(str_offset, size) {
         let strView = new Uint8Array(this.buffer, str_offset, size);
-        let i = 0;
-        let rtnStr = "";
-        while(strView[i] != 0) {
-            rtnStr += String.fromCharCode(strView[i]);
-            i++;
-        }
-        return rtnStr;
+        let i = strView.indexOf(0);
+        let td = new TextDecoder();
+        return td.decode(strView.slice(0, i));
     }
 
     _readFileName(header_offset) {
@@ -104,28 +107,35 @@ tarball.TarReader = class {
         return blob;
     }
 
+    _readFileBinary(file_offset, size) {
+        let view = new Uint8Array(this.buffer, file_offset, size);
+        return view;
+    }
+
     _readTextFile(file_offset, size) {
         let view = new Uint8Array(this.buffer, file_offset, size);
-        let data = "";
-        for(let i = 0; i < size; i++) {
-            data += String.fromCharCode(view[i]);
-        }
-        return data;
+        let td = new TextDecoder();
+        return td.decode(view);
     }
 
     getTextFile(file_name) {
-        let i = this.fileInfo.findIndex(info => info.name == file_name);
-        if(i >= 0) {
-            let info = this.fileInfo[i];
+        let info = this.fileInfo.find(info => info.name == file_name);
+        if (info) {
             return this._readTextFile(info.header_offset+512, info.size); 
         }
     }
 
     getFileBlob(file_name, mimetype) {
-        let i = this.fileInfo.findIndex(info => info.name == file_name);
-        if(i >= 0) {
-            let info = this.fileInfo[i];
+        let info = this.fileInfo.find(info => info.name == file_name);
+        if (info) {
             return this._readFileBlob(info.header_offset+512, info.size, mimetype); 
+        }
+    }
+
+    getFileBinary(file_name) {
+        let info = this.fileInfo.find(info => info.name == file_name);
+        if (info) {
+            return this._readFileBinary(info.header_offset+512, info.size); 
         }
     }
 };
@@ -136,11 +146,8 @@ tarball.TarWriter = class {
     }
 
     addTextFile(name, text, opts) {
-        let buf = new ArrayBuffer(text.length);
-        let arr = new Uint8Array(buf);
-        for(let i = 0; i < text.length; i++) {
-            arr[i] = text.charCodeAt(i);
-        }
+        let te = new TextEncoder();
+        let arr = te.encode(text);
         this.fileData.push({
             name: name,
             array: arr,
@@ -201,7 +208,7 @@ tarball.TarWriter = class {
     }
 
     async download(filename) {
-        let blob = await this.write();
+        let blob = await this.writeBlob();
         let $downloadElem = document.createElement('a');
         $downloadElem.href = URL.createObjectURL(blob);
         $downloadElem.download = filename;
@@ -211,17 +218,23 @@ tarball.TarWriter = class {
         document.body.removeChild($downloadElem);
     }
 
-    write() {
+    async writeBlob(onUpdate) {
+        return new Blob([await this.write(onUpdate)], {"type":"application/x-tar"});
+    }
+
+    write(onUpdate) {
         return new Promise((resolve,reject) => {
             this._createBuffer();
             let offset = 0;
             let filesAdded = 0;
             let onFileDataAdded = () => {
                 filesAdded++;
+                if (onUpdate) {
+                    onUpdate(filesAdded / this.fileData.length * 100);
+                }
                 if(filesAdded === this.fileData.length) {
                     let arr = new Uint8Array(this.buffer);
-                    let blob = new Blob([arr], {"type":"application/x-tar"});
-                    resolve(blob);
+                    resolve(arr);
                 }
             };
             for(let fileIdx = 0; fileIdx < this.fileData.length; fileIdx++) {
@@ -269,11 +282,18 @@ tarball.TarWriter = class {
 
     _writeString(str, offset, size) {
         let strView = new Uint8Array(this.buffer, offset, size);
-        for(let i = 0; i < size; i++) {
-            if(i < str.length) {
-                strView[i] = str.charCodeAt(i);
-            } else {
+        let te = new TextEncoder();
+        if (te.encodeInto) {
+            // let the browser write directly into the buffer
+            let written = te.encodeInto(str, strView).written;
+            for (let i = written; i < size; i++) {
                 strView[i] = 0;
+            }
+        } else {
+            // browser can't write directly into the buffer, do it manually
+            let arr = te.encode(str);
+            for (let i = 0; i < size; i++) {
+                strView[i] = i < arr.length ? arr[i] : 0;
             }
         }
     }
