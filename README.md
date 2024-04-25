@@ -5,6 +5,8 @@ Javascript library to create or read tar files in the browser
 It is often necessary to pack data into single files in the browser (e.g. creating a "project" file consisting of images+data in WebPlotDigitizer). One way is to create simple tarballs with all the data. There are a few existing libraries that do this, but this seems easy enough to do so I decided to do make my own library for learning purposes.
 
 ## Status
+Refer to https://www.npmjs.com/package/@gera2ld/tarjs for a better maintained version of this code. This code is mainly used to support WebPlotDigitizer. 
+
 There are a few known limitations with this library:
 
 - Browser only, no support for NodeJS.
@@ -17,18 +19,16 @@ Some benefits of using this library:
 - Unit tests for read and write.
 
 ## Browser Support
-This works fine on any recent version of Chrome, Firefox or Safari. To test your browser, run the unit tests here: http://arohatgi.info/tarballjs/tests/ 
+This works fine on any recent version of Chrome, Firefox or Safari.
 
 ## Running Unit Tests
 For Chrome, the test page has to be hosted on a HTTP server. An easy way is to use Python:
 
 In the root directory of this project, do:
 
-    python -m SimpleHTTPServer 8000
+    python3 -m http.server 8000
 
 Then browse to http://localhost:8000/tests/
-
-For a quick test, you can visit: http://arohatgi.info/tarballjs/tests/
 
 In Firefox, you can simply load tests/index.html without starting a web server.
 
